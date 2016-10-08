@@ -8,7 +8,6 @@
 #include <WiFiManager.h>          //https://github.com/tzapu/WiFiManager
 
 #include <PubSubClient.h>
-#include <aREST.h>
 
 #include <ArduinoJson.h>          //https://github.com/bblanchon/ArduinoJson
 
@@ -39,9 +38,6 @@ Pin led(LED);
 
 WiFiClient espClient;
 PubSubClient client(espClient);
-
-// Create aREST instance
-aREST rest = aREST(client);
 
 // Functions
 void callback(char* topic, byte* payload, unsigned int length) {
@@ -187,7 +183,6 @@ void setup() {
   Serial.println(atoi(mqtt_port));
   client.setServer(mqtt_server, atoi(mqtt_port));
   client.setCallback(callback);
-  rest.setMQTTServer(mqtt_server);
   // --------------
   Serial.println("setup ended");
 }
@@ -229,5 +224,4 @@ void loop() {
   if (button.low()) {
     client.publish(publish_channel(), "button low");
   }
-  rest.handle(client);
 }
