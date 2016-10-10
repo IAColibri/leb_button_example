@@ -56,12 +56,18 @@ void callback(char* topic, byte* payload, unsigned int length) {
   }
 }
 
-const char* publish_channel(){
-  return "pomodoro_clock/1/out";
+char* channel(const char* topic) {
+  char channel[100] = "";
+  snprintf(channel, 100, "%s/%s/%s", device_name, device_id, topic);
+  return channel;
+}
+
+char* publish_channel(){
+  return channel("out");
 }
 
 const char* subscribe_channel(){
-  return "pomodoro_clock/1/in";
+  return channel("in");
 }
 
 //callbacks functions
