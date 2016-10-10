@@ -11,7 +11,10 @@
 
 #include <ArduinoJson.h>          //https://github.com/bblanchon/ArduinoJson
 
-#include "button.h"
+#include <Button.h>
+#include <ButtonEventCallback.h>
+#include <BasicButton.h>
+
 #include "pin.h"
 // 1 led, 1 button
 #define LED 0
@@ -33,7 +36,7 @@ void saveConfigCallback () {
   shouldSaveConfig = true;
 }
 
-Button button(BUTTON);
+BasicButton button = BasicButton(BUTTON);
 Pin led(LED);
 
 WiFiClient espClient;
@@ -61,9 +64,15 @@ const char* subscribe_channel(){
   return "pomodoro_clock/1/in";
 }
 
+//callbacks functions
+void pressFunc(Button& btn){
+  client.publish(publish_channel(), "Pressed");
+}
+
 void setup() {
   pinMode(LED, OUTPUT);
-  button.setup();
+
+  button.onPress(pressFunc);
 
   // put your setup code here, to run once:
   Serial.begin(115200);
@@ -195,7 +204,7 @@ void reconnect() {
     if (client.connect("ESP8266Client")) {
       Serial.println("connected");
       // Once connected, publish an announcement...
-      client.publish("pomodoro_clock/1/out", "connected");
+      client.publish(publish_channel(), "connected");
 
       Serial.println("publish to: ");
       Serial.println(publish_channel());
@@ -220,8 +229,5 @@ void loop() {
   if (led.is_changed(digitalRead(led.pin))) {
     client.publish(publish_channel(), "changed");
   }
-
-  if (button.low()) {
-    client.publish(publish_channel(), "button low");
-  }
+  button.update();
 }
