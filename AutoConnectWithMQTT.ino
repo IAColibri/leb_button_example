@@ -16,6 +16,7 @@
 #include <BasicButton.h>
 
 #include "pin.h"
+#include "device.h"
 // 1 led, 1 button
 #define LED 0
 #define BUTTON 2
@@ -38,6 +39,7 @@ void saveConfigCallback () {
 
 BasicButton button = BasicButton(BUTTON);
 Pin led(LED);
+Device device;
 
 WiFiClient espClient;
 PubSubClient client(espClient);
@@ -56,23 +58,9 @@ void callback(char* topic, byte* payload, unsigned int length) {
   }
 }
 
-char* channel(const char* topic) {
-  char channel[100] = "";
-  snprintf(channel, 100, "%s/%s/%s", device_name, device_id, topic);
-  return channel;
-}
-
-char* publish_channel(){
-  return channel("out");
-}
-
-const char* subscribe_channel(){
-  return channel("in");
-}
-
 //callbacks functions
 void pressFunc(Button& btn){
-  client.publish(publish_channel(), "Pressed");
+  client.publish(device.publish_channel(), "Pressed");
 }
 
 void setup() {
@@ -199,6 +187,8 @@ void setup() {
   client.setServer(mqtt_server, atoi(mqtt_port));
   client.setCallback(callback);
   // --------------
+
+  device.set(device_name, device_id);
   Serial.println("setup ended");
 }
 
@@ -210,12 +200,12 @@ void reconnect() {
     if (client.connect("ESP8266Client")) {
       Serial.println("connected");
       // Once connected, publish an announcement...
-      client.publish(publish_channel(), "connected");
+      client.publish(device.publish_channel(), "connected");
 
       Serial.println("publish to: ");
-      Serial.println(publish_channel());
+      Serial.println(device.publish_channel());
       // ... and resubscribe
-      client.subscribe(subscribe_channel());
+      client.subscribe(device.subscribe_channel());
     } else {
       Serial.print("failed, rc=");
       Serial.print(client.state());
@@ -233,7 +223,7 @@ void loop() {
   }
 
   if (led.is_changed(digitalRead(led.pin))) {
-    client.publish(publish_channel(), "changed");
+    client.publish(device.publish_channel(), "changed");
   }
   button.update();
 }
