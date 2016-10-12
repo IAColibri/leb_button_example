@@ -63,15 +63,7 @@ void pressFunc(Button& btn){
   client.publish(device.publish_channel(), "Pressed");
 }
 
-void setup() {
-  pinMode(LED, OUTPUT);
-
-  button.onPress(pressFunc);
-
-  // put your setup code here, to run once:
-  Serial.begin(115200);
-  Serial.println();
-
+JsonObject& config(){
   //read configuration from FS json
   Serial.println("mounting FS...");
   delay(2000);
@@ -89,26 +81,39 @@ void setup() {
 
         configFile.readBytes(buf.get(), size);
         DynamicJsonBuffer jsonBuffer;
-        JsonObject& json = jsonBuffer.parseObject(buf.get());
-	Serial.println("config.json");
-        json.printTo(Serial);
-        if (json.success()) {
-          Serial.println("\nparsed json");
-
-          strcpy(mqtt_server, json["mqtt_server"]);
-          strcpy(mqtt_port, json["mqtt_port"]);
-          strcpy(device_id, json["device_id"]);
-          strcpy(device_name, json["device_name"]);
-
-        } else {
-          Serial.println("failed to load json config");
-        }
+	configFile.close();
+	return jsonBuffer.parseObject(buf.get());
       }
     }
   } else {
     Serial.println("failed to mount FS");
   }
-  //end read
+}
+
+void setup() {
+  pinMode(LED, OUTPUT);
+
+  button.onPress(pressFunc);
+
+  // put your setup code here, to run once:
+  Serial.begin(115200);
+  Serial.println();
+
+  //read configuration from FS json
+  JsonObject& json = config();
+  Serial.println("config.json");
+  json.printTo(Serial);
+  if (json.success()) {
+    Serial.println("\nparsed json");
+
+    strcpy(mqtt_server, json["mqtt_server"]);
+    strcpy(mqtt_port, json["mqtt_port"]);
+    strcpy(device_id, json["device_id"]);
+    strcpy(device_name, json["device_name"]);
+
+  } else {
+    Serial.println("failed to load json config");
+  }
 
   // The extra parameters to be configured (can be either global or just in the setup)
   // After connecting, parameter.getValue() will get you the configured value
