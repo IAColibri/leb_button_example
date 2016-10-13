@@ -13,7 +13,7 @@
 
 #include <Button.h>
 #include <ButtonEventCallback.h>
-#include <BasicButton.h>
+#include <PushButton.h>
 
 #include "pin.h"
 #include "device.h"
@@ -23,24 +23,26 @@
 #define BUTTON 2
 #define DEBUG_MODE  1               //1 set debug on
 
-BasicButton button = BasicButton(BUTTON);
+PushButton button = PushButton(BUTTON);
 Pin led(LED);
 Device device;
 
 WiFiClient espClient;
 PubSubClient client(espClient);
 
+void led_to(int pin, int value){
+  digitalWrite(pin, value);
+  client.publish(device.publish_channel(), "change");
+}
+
 // Functions
 void callback(char* topic, byte* payload, unsigned int length) {
   /* rest.handle_callback(client, topic, payload, length); */
   // Switch on the LED if an 1 was received as first character
   if ((char)payload[0] == '1') {
-    digitalWrite(LED, LOW);   // Turn the LED on (Note that LOW is the voltage level
-		// but actually the LED is on; this is because
-		// it is acive low on the ESP-01)
-
+    led_to(LED, LOW);
   } else {
-    digitalWrite(LED, HIGH);  // Turn the LED off by making the voltage HIGH
+    led_to(LED, HIGH);
   }
 }
 
@@ -97,8 +99,5 @@ void loop() {
     reconnect();
   }
 
-  if (led.is_changed(digitalRead(led.pin))) {
-    client.publish(device.publish_channel(), "changed");
-  }
   button.update();
 }
