@@ -27,18 +27,19 @@ PushButton button = PushButton(BUTTON);
 Pin led(LED);
 Device device;
 
+void callback(char* topic, byte* payload, unsigned int length);
+
 WiFiClient espClient;
 PubSubClient client(espClient);
 
 void led_to(int pin, int value){
   digitalWrite(pin, value);
+  Serial.println("change");
   client.publish(device.publish_channel(), "change");
 }
 
 // Functions
 void callback(char* topic, byte* payload, unsigned int length) {
-  /* rest.handle_callback(client, topic, payload, length); */
-  // Switch on the LED if an 1 was received as first character
   if ((char)payload[0] == '1') {
     led_to(LED, LOW);
   } else {
@@ -59,7 +60,7 @@ void setup() {
   // put your setup code here, to run once:
   Serial.begin(115200);
   Serial.println();
-
+  delay(2000); // for debuging only
   setup_config();
   client.setServer(mqtt_server, atoi(mqtt_port));
   client.setCallback(callback);
@@ -74,7 +75,10 @@ void reconnect() {
   while (!client.connected()) {
     Serial.print("Attempting MQTT connection...");
     // Attempt to connect
-    if (client.connect("ESP8266Client")) {
+    String clientId = "ESP8266Client-";
+    clientId += String(random(0xffff), HEX);
+    // Attempt to connect
+    if (client.connect(clientId.c_str())) {
       Serial.println("connected");
       // Once connected, publish an announcement...
       client.publish(device.publish_channel(), "connected");
@@ -82,6 +86,8 @@ void reconnect() {
       Serial.println("publish to: ");
       Serial.println(device.publish_channel());
       // ... and resubscribe
+      Serial.println("subcribe to: ");
+      Serial.println(device.subscribe_channel());
       client.subscribe(device.subscribe_channel());
     } else {
       Serial.print("failed, rc=");
@@ -99,5 +105,6 @@ void loop() {
     reconnect();
   }
 
+  client.loop();
   button.update();
 }
