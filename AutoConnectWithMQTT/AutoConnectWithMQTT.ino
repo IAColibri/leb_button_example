@@ -11,16 +11,20 @@
 
 #include <ArduinoJson.h>          //https://github.com/bblanchon/ArduinoJson
 
-#include <Button.h>               //https://github.com/r89m/PushButton
+#include <Button.h>
 #include <ButtonEventCallback.h>
 #include <PushButton.h>
 
+#include "pin.h"
 #include "device.h"
 #include "config.h"
-#include <string.h>
-
+// 1 led, 1 button
+#define LED 0
+#define BUTTON 2
 #define DEBUG_MODE  1               //1 set debug on
 
+PushButton button = PushButton(BUTTON);
+Pin led(LED);
 Device device;
 
 void callback(char* topic, byte* payload, unsigned int length);
@@ -28,20 +32,40 @@ void callback(char* topic, byte* payload, unsigned int length);
 WiFiClient espClient;
 PubSubClient client(espClient);
 
-// Cuando llega un mensage por mqtt se imprime en el serial
+void led_to(int pin, int value){
+  digitalWrite(pin, value);
+  Serial.println("change");
+  client.publish(device.publish_channel(), "change");
+}
+
+// Functions
 void callback(char* topic, byte* payload, unsigned int length) {
-  Serial.println("Message arrived:");
-  char message = payload[0];
-  Serial.print(message);
+  if ((char)payload[0] == '1') {
+    led_to(LED, LOW);
+  } else {
+    led_to(LED, HIGH);
+  }
+}
+
+//callbacks functions
+void pressFunc(Button& btn){
+  client.publish(device.publish_channel(), "Pressed");
 }
 
 void setup() {
+  pinMode(LED, OUTPUT);
+
+  button.onPress(pressFunc);
+
+  // put your setup code here, to run once:
   Serial.begin(9600);
   Serial.println();
+  delay(500); // for debuging only
   setup_config();
   client.setServer(mqtt_server, atoi(mqtt_port));
   client.setCallback(callback);
-  
+  // --------------
+
   device.set(device_name, device_id);
   Serial.println("setup ended");
 }
@@ -76,15 +100,11 @@ void reconnect() {
 }
 
 void loop() {
-  if (!client.connected()) {
+ if (!client.connected()) {
     Serial.println("re connecting");
     reconnect();
   }
 
   client.loop();
-
-  // Publica por mqtt el mensaje que viene por serial
-  if (Serial.available() > 0) {
-    client.publish(device.publish_channel(), Serial.readString().c_str());
-  }
+  button.update();
 }

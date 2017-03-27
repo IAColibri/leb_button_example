@@ -74,9 +74,21 @@ void setup_config(){
   wifiManager.addParameter(&custom_device_id);
   wifiManager.addParameter(&custom_device_name);
 
-  //reset settings - for testing
-  //wifiManager.resetSettings();
+  // Espepa que llegue un mensaje de reset por el serial.
+  // --------------------------------------------------
+  Serial.println("Resetear?");
+  delay(5000);
 
+  if (Serial.available() > 0) {
+    if(Serial.readString() == "AT+RESET"){
+      Serial.println("reseteando");
+      wifiManager.resetSettings();
+    } else {
+      Serial.println("continuo normalmente");
+    }
+  }
+  // --------------------------------------------------  
+  
   //tries to connect to last known settings
   //if it does not connect it starts an access point with the specified name
   //here  "AutoConnectAP" with password "password"
